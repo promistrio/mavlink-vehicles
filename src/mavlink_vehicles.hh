@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <vector>
 
+
 /**
  * @file
  * @brief Mavlink Vehicles library
@@ -61,9 +62,15 @@ struct global_pos_int : state_variable {
     int32_t lat = 0; /**< @brief Latitude in degrees * 1e7 */
     int32_t lon = 0; /**< @brief Longitude in degrees * 1e7 */
     int32_t alt = 0; /**< @brief Millimeters (AMSL) */
+    int8_t type = 16; //MAV_CMD_NAV_WAYPOINT
+    float radius = 5.0f;
+    float loops = 5.0f;
+
     global_pos_int() {}
     global_pos_int(int32_t _lat, int32_t _lon, int32_t _alt)
-        : lat(_lat), lon(_lon), alt(_alt) {}
+        : lat(_lat), lon(_lon), alt(_alt), type(16) {} 
+    global_pos_int(int8_t _type, int32_t _lat, int32_t _lon, int32_t _alt)
+        :  type(_type), lat(_lat), lon(_lon), alt(_alt){} 
 };
 
 /**
@@ -420,6 +427,7 @@ class mav_vehicle
      */
     public: void send_mission_waypoint(double lat, double lon, double alt,
                                bool autorotate = false);
+                               
     /**
      * @brief Command the vehicle to go immediately to the given mission
      *        waypoint. This command overwrites any mission list that may be
@@ -429,6 +437,16 @@ class mav_vehicle
      * @param autorotate Enable or disable autorotation during the detour.
      */
     public: void send_mission_waypoint(global_pos_int global, bool autorotate = false);
+
+    /**
+     * @brief Command the vehicle to go immediately to the given mission
+     *        waypoint. This command overwrites any mission list that may be
+     *        stored into the vehicle, replacing it with a list with only one
+     *        waypoint.
+     * @param global Global position of the waypoint
+     * @param autorotate Enable or disable autorotation during the detour.
+     */
+    public: void send_mission(std::vector<global_pos_int> mission);
 
     /**
      * @brief Check if our system is still sending a mission to the vehicle.

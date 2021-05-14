@@ -26,6 +26,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <vector>
+#include <iomanip>
 
 #include "apm.hh"
 #include "mavlink_vehicles.hh"
@@ -352,6 +353,7 @@ void msghandler::handle(mav_vehicle &mav, const mavlink_message_t *msg)
 
         // Send requested mission waypoint
         global_pos_int item = mav.mission_to_send[mission_request.seq];
+
         mav.send_mission_waypoint(item, mission_request.seq);
         return;
     }
@@ -1133,12 +1135,43 @@ void mav_vehicle::send_mission_waypoint(global_pos_int wp, bool autorotate)
     this->mission_waypoint_autorotate = autorotate;
 }
 
+void mav_vehicle::send_mission(std::vector<global_pos_int> mission){
+    // We have taken control
+    this->is_our_control = true;
+
+    print_verbose("Set mission from app\n");
+
+    // We need to toggle from AUTO to GUIDED in order to update ArduPilot
+    // mission waypoints.
+    if (this->autopilot == autopilot_type::APM) {
+        set_mode(mode::GUIDED, 0);
+    }
+
+    // The flight stack reserves the first element of the mission commands list
+    // (seq=0) to the home position. Sending a mission item with that sequence
+    // number does not overwrite the home position. Ardupilot simply ignores
+    // it. For that reason, the first waypoint (seq=0) must be a mock waypoint
+    // that will never be used and our waypoints must start with seq=1
+    this->mission_to_send.resize(0);
+    this->mission_to_send = mission;
+
+    // Send the mission_count command to the flight stack so that it prepares
+    // to request the mission items one by one.
+    send_mission_count(this->mission_to_send.size());
+
+    // Set mission mode as normal
+    this->mstatus = mission_status::NORMAL;
+
+    this->sending_mission = true;
+    this->mission_waypoint_autorotate = false;
+}
+
 void mav_vehicle::send_mission_waypoint(global_pos_int wp, uint16_t seq)
 {
     mavlink_mission_item_int_t mav_waypoint;
 
     // Set mavlink message attributes
-    mav_waypoint.command = MAV_CMD_NAV_WAYPOINT;
+    mav_waypoint.command = wp.type;
     mav_waypoint.target_system = defaults::target_system_id;
     mav_waypoint.target_component = defaults::target_component_id;
 
@@ -1150,7 +1183,7 @@ void mav_vehicle::send_mission_waypoint(global_pos_int wp, uint16_t seq)
     mav_waypoint.y = wp.lon;
 
     // Set relative altitude in meters according to frame
-    mav_waypoint.z = (wp.alt - double(this->home.alt)) / 1e3f;
+    mav_waypoint.z = wp.alt;//(wp.alt - double(this->home.alt)) / 1e3f;
 
     // Too low altitudes are not allowed by ArduCopter because of possible
     // crash landings.
@@ -1160,6 +1193,7 @@ void mav_vehicle::send_mission_waypoint(global_pos_int wp, uint16_t seq)
     mav_waypoint.seq = seq;
 
     // Set params
+
     mav_waypoint.param1 = 0;       // Hold time in decimal seconds
     mav_waypoint.param2 = 0.01;    // Acceptance radius in meters
     mav_waypoint.param3 = 0;       // Radius in meters to pass through wp
