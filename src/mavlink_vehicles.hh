@@ -71,6 +71,8 @@ struct global_pos_int : state_variable {
         : lat(_lat), lon(_lon), alt(_alt), type(16) {} 
     global_pos_int(int8_t _type, int32_t _lat, int32_t _lon, int32_t _alt)
         :  type(_type), lat(_lat), lon(_lon), alt(_alt){} 
+    global_pos_int(int8_t _type, int32_t _lat, int32_t _lon, int32_t _alt, float _radius, float _loop)
+        :  type(_type), lat(_lat), lon(_lon), alt(_alt), radius(_radius),  loops(_loop) {} 
 };
 
 /**

@@ -1193,10 +1193,17 @@ void mav_vehicle::send_mission_waypoint(global_pos_int wp, uint16_t seq)
     mav_waypoint.seq = seq;
 
     // Set params
-
-    mav_waypoint.param1 = 0;       // Hold time in decimal seconds
-    mav_waypoint.param2 = 0.01;    // Acceptance radius in meters
-    mav_waypoint.param3 = 0;       // Radius in meters to pass through wp
+    if (wp.type == MAV_CMD_NAV_LOITER_TURNS){
+        mav_waypoint.param1 = wp.loops;       // Hold time in decimal seconds
+        mav_waypoint.param2 = 0.01;    // Acceptance radius in meters
+        mav_waypoint.param3 = wp.radius; 
+    }
+    else{
+        mav_waypoint.param1 = 0;       // Hold time in decimal seconds
+        mav_waypoint.param2 = 0.1;    // Acceptance radius in meters
+        mav_waypoint.param3 = 0; 
+    }
+          // Radius in meters to pass through wp
     mav_waypoint.param4 = 0;       // Desired yaw angle at arrival
     mav_waypoint.current = 0;      // Unused
     mav_waypoint.autocontinue = 0; // Unused
