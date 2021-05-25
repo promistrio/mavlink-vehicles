@@ -339,6 +339,11 @@ class mav_vehicle
     public: void send_heartbeat();
 
     /**
+     * @brief Send a message which set center of circle mode.
+     */
+    public: void send_circle_center(int32_t lat, int32_t lon, float spiral_pitch, float radius);
+
+    /**
      * @brief Set vehicle mode.
      * @param m Mode.
      */
@@ -489,6 +494,14 @@ class mav_vehicle
      */
     public: void take_control(bool take_control);
 
+    public: void set_relative_alt(int32_t alt){
+        _relative_altitude = alt / 1000.0;
+    }
+
+    public: float get_relative_alt(){
+        return _relative_altitude;
+    }
+
   private:
     status stat = status::STANDBY;
     arm_status arm_stat = arm_status::NOT_ARMED;
@@ -500,6 +513,9 @@ class mav_vehicle
     local_pos speed;
     global_pos_int home;
     global_pos_int global;
+    float _relative_altitude = 0;
+    float _battery = 0;
+    float _radius = 0;
 
     global_pos_int mission_waypoint;
     uint16_t mission_waypoint_id = 0;

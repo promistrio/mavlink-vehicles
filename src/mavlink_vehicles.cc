@@ -330,7 +330,10 @@ void msghandler::handle(mav_vehicle &mav, const mavlink_message_t *msg)
         mav.global.lat = global_pos_int.lat;
         mav.global.lon = global_pos_int.lon;
         mav.global.alt = global_pos_int.alt;
+        mav.set_relative_alt(global_pos_int.relative_alt);
+
         mav.global.is_new = true;
+
         return;
     }
     case MAVLINK_MSG_ID_MISSION_REQUEST:
@@ -709,6 +712,26 @@ void mav_vehicle::send_heartbeat()
     }
 }
 
+void mav_vehicle::send_circle_center(int32_t lat, int32_t lon, float spiral_pitch, float radius){
+    
+    mavlink_message_t mav_msg;
+    mavlink_set_circle_center_t set_circle;
+    set_circle.latitude =  lat;
+    set_circle.longitute = lon;
+    set_circle.spiral_pitch = spiral_pitch;
+
+    uint8_t mav_data_buffer[defaults::send_buffer_len];
+
+    mavlink_msg_set_circle_center_encode(this->system_id, defaults::component_id,
+                                 &mav_msg, &set_circle);
+
+    int n = mavlink_msg_to_send_buffer(mav_data_buffer, &mav_msg);
+
+    if (send_data(mav_data_buffer, n) == -1) {
+        print_verbose("Error sending set_circle_center\n");
+    }
+}
+
 void mav_vehicle::set_mode(mode m)
 {
     set_mode(m, request_intervals_ms::set_mode);
@@ -948,7 +971,7 @@ void mav_vehicle::request_mission_list()
     uint8_t mav_data_buffer[defaults::send_buffer_len];
     mavlink_msg_mission_request_list_pack(
         this->system_id, defaults::component_id, &mav_msg,
-        defaults::target_component_id, defaults::target_system_id);
+        defaults::target_component_id, defaults::target_system_id, MAV_MISSION_TYPE_MISSION);
     int n = mavlink_msg_to_send_buffer(mav_data_buffer, &mav_msg);
     if (send_data(mav_data_buffer, n) == -1) {
         std::perror("Error requesting mission list\n");
